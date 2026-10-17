@@ -2,8 +2,12 @@ import { test, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('landing page links straight to each board size', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /learn to\s*flow/i })).toBeInTheDocument();
+
+  for (const size of [4, 5, 6]) {
+    const link = screen.getByRole('link', { name: new RegExp(`${size} × ${size}`) });
+    expect(link).toHaveAttribute('href', `/board/${size}`);
+  }
 });
