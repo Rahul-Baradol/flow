@@ -1,8 +1,8 @@
-FROM node:18.17-alpine as build
+FROM node:22-alpine as build
 
 WORKDIR /usr/src/app
 
-COPY package* .
+COPY package*.json ./
 
 RUN npm install 
 
@@ -10,9 +10,9 @@ COPY . .
 
 RUN npm run build
 
-FROM node:18.17-alpine
+FROM node:22-alpine
 
-COPY --from=build /usr/src/app/build /usr/src/app/
+COPY --from=build /usr/src/app/dist /usr/src/app/
 
 RUN npm install -g serve
 
