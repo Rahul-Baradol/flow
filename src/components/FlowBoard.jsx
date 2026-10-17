@@ -30,13 +30,13 @@ export default function FlowBoard({ size, dots, paths = [], tint = [], onCellCli
               aria-label={label}
               disabled={disabled}
               onClick={() => onCellClick(id)}
-              className="border-r border-b border-white/[0.06] transition-colors duration-200 not-disabled:cursor-pointer not-disabled:hover:bg-white/[0.06] focus-visible:relative focus-visible:z-30 focus-visible:outline-2 focus-visible:outline-sky-400"
+              className="border-r border-b border-white/6 transition-colors duration-200 not-disabled:cursor-pointer not-disabled:hover:bg-white/6 focus-visible:relative focus-visible:z-30 focus-visible:outline-2 focus-visible:outline-sky-400"
               style={pipe ? { backgroundColor: `${pipe.hex}1f` } : undefined}
             />
           ) : (
             <div
               key={id}
-              className="border-r border-b border-white/[0.06]"
+              className="border-r border-b border-white/6"
               style={pipe ? { backgroundColor: `${pipe.hex}1f` } : undefined}
             />
           );
@@ -73,7 +73,6 @@ export default function FlowBoard({ size, dots, paths = [], tint = [], onCellCli
               cy={cy}
               r={0.32}
               fill={COLORS[code].hex}
-              style={{ filter: `drop-shadow(0 0 0.12px ${COLORS[code].hex})` }}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 500, damping: 28 }}
