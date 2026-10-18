@@ -1,7 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Warm paper + ink. Vibrant hues live only in colors.js, for the puzzle. */
+  --color-paper: #f6f2ea;
+  --color-card: #fffdf8;
+  --color-ink: #17150f;
+  --color-muted: #6b655a;
+  --color-line: #ddd5c6;
+}
+
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -11,5 +23,6 @@
 body {
   margin: 0;
   min-width: 320px;
-  background-color: #030712;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
 }

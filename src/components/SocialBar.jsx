@@ -18,7 +18,7 @@ const socialLinks = [
 
 export default function SocialBar() {
   return (
-    <div className="absolute top-5 right-5 z-40 flex flex-col gap-4 rounded-full border border-white/30 bg-black/20 px-3 py-4 backdrop-blur-md">
+    <div className="absolute top-5 right-5 z-40 flex flex-col gap-3 rounded-full border-2 border-ink bg-card px-2 py-3 shadow-[3px_3px_0_0_var(--color-ink)]">
       {socialLinks.map((link) => (
         <a
           key={link.alt}
@@ -26,9 +26,9 @@ export default function SocialBar() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={link.alt}
-          className="flex h-fit w-fit items-center justify-center overflow-hidden rounded-full border-2 border-violet-600 bg-black/20 opacity-50 transition-opacity hover:opacity-100"
+          className="flex h-fit w-fit items-center justify-center overflow-hidden rounded-full opacity-60 grayscale transition-all hover:scale-110 hover:opacity-100 hover:grayscale-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <img src={link.icon} alt={link.alt} className="h-auto w-6 object-cover md:w-8" />
+          <img src={link.icon} alt={link.alt} className="h-auto w-6 object-cover md:w-7" />
         </a>
       ))}
     </div>

@@ -4,9 +4,25 @@
 // size  -> board is size x size, cells are numbered row-major (id = row * size + col)
 // pairs -> pairs[colorCode] = [startId, endId] for each color code 1..9 that is placed
 //
-// Returns { solved, order, ends }:
+// Returns { solved, order, ends, trace }:
 //   order -> cells between the dots, in the order they were laid down, [{ id, color }]
 //   ends  -> ends[colorCode] = [startId, endId] in the direction the path was traced
+//   trace -> every step of the search, backtracking included, packed one per Uint16 (see decodeStep)
+
+// Search steps, as packed into the trace.
+export const EXTEND = 0; // a path grows into a cell
+export const RETRACT = 1; // it backs out of that cell
+export const PRUNE = 2; // it backs out because a dead-end check failed
+export const CONNECT = 3; // a path reaches its end dot
+export const DISCONNECT = 4; // that connection is undone
+
+// A search can run to millions of steps, so each is packed as type | color << 3 | id << 7.
+const pack = (type, color, id = 0) => type | (color << 3) | (id << 7);
+
+export function decodeStep(code) {
+  return { type: code & 7, color: (code >> 3) & 15, id: code >> 7 };
+}
+
 export function solve(size, pairs) {
   const n = size;
   const m = size;
@@ -151,7 +167,7 @@ export function solve(size, pairs) {
 
   // Function which returns true if the current state of the grid is solvable or returns false otherwise
   function performValidityCheck(ind) {
-    if (checkForStuckColors(ind) === 1) {
+    if (checkForStuckColors(ind)) {
       return false;
     }
 
@@ -161,6 +177,17 @@ export function solve(size, pairs) {
   // Recursive function which traces the path of a color -> Depth First Search
   let ptr = 0;
   const visitedInOrder = [];
+  let trace = new Uint16Array(1024);
+  let traceLength = 0;
+
+  function record(code) {
+    if (traceLength === trace.length) {
+      const grown = new Uint16Array(trace.length * 2);
+      grown.set(trace);
+      trace = grown;
+    }
+    trace[traceLength++] = code;
+  }
 
   function solvePuzzle(row, col, ind) {
     if (solved === 1) {
@@ -192,6 +219,7 @@ export function solve(size, pairs) {
 
     if (colorX[color][1] === row && colorY[color][1] === col) {
       vis[row][col] = 1;
+      record(pack(CONNECT, color));
 
       // Move to next color state
       if (ind + 1 === colorsAccToFreeMoves.length) {
@@ -204,6 +232,8 @@ export function solve(size, pairs) {
       }
       // End
 
+      if (solved === 1) return;
+      record(pack(DISCONNECT, color));
       vis[row][col] = prevVis;
       return;
     }
@@ -211,6 +241,9 @@ export function solve(size, pairs) {
     vis[row][col] = 1;
     grid[row][col] = color;
     visitedInOrder[ptr++] = [(row * m) + col, color];
+    // Starting dots are visited too, but only cells between dots belong in the trace.
+    const id = row * m + col;
+    if (prevVis !== 2) record(pack(EXTEND, color, id));
 
     // Checking if the current state of the grid is solvable
     let isValidState = true;
@@ -220,6 +253,7 @@ export function solve(size, pairs) {
     }
 
     if (!isValidState) {
+      if (prevVis !== 2) record(pack(PRUNE, color, id));
       vis[row][col] = prevVis;
       grid[row][col] = prev;
 
@@ -240,6 +274,7 @@ export function solve(size, pairs) {
       }
     }
 
+    if (prevVis !== 2) record(pack(RETRACT, color, id));
     grid[row][col] = prev;
     vis[row][col] = prevVis;
     visitedInOrder[--ptr] = [(row * m) + col, prev];
@@ -293,7 +328,7 @@ export function solve(size, pairs) {
   }
 
   if (colorsAccToFreeMoves.length === 0) {
-    return { solved: false, order: [], ends: [] };
+    return { solved: false, order: [], ends: [], trace: new Uint16Array(0) };
   }
 
   // sorting in ascending order of free moves
@@ -321,5 +356,6 @@ export function solve(size, pairs) {
       .filter(([id]) => !isDot.has(id))
       .map(([id, color]) => ({ id, color })),
     ends,
+    trace: trace.subarray(0, traceLength),
   };
 }

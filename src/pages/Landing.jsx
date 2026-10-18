@@ -51,9 +51,9 @@ function demoMotion(index) {
 function Divider({ children }) {
   return (
     <div className="flex items-center gap-4">
-      <div className="h-px w-8 bg-slate-700" />
-      <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">{children}</span>
-      <div className="h-px w-8 bg-slate-700" />
+      <div className="h-0.5 w-8 rounded-full bg-ink" />
+      <span className="font-mono text-[11px] tracking-widest text-muted uppercase">{children}</span>
+      <div className="h-px w-8 bg-line" />
     </div>
   );
 }
@@ -82,7 +82,7 @@ export default function Landing() {
   }));
 
   return (
-    <div className="relative flex min-h-dvh w-full items-center overflow-hidden bg-[#030712] font-sans text-slate-50 selection:bg-sky-500/30">
+    <div className="relative flex min-h-dvh w-full items-center overflow-hidden bg-paper font-sans text-ink selection:bg-ink selection:text-paper">
       <Backdrop />
       <SocialBar />
 
@@ -93,8 +93,8 @@ export default function Landing() {
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
         >
           <h1 className="mb-8 flex flex-col">
-            <span className="mb-1 text-2xl font-light tracking-tight text-slate-400 md:text-3xl">Learn to</span>
-            <span className="pb-2 text-7xl leading-[0.85] font-black tracking-tight text-white drop-shadow-[0_0_30px_rgba(56,189,248,0.25)] md:text-9xl">
+            <span className="mb-1 text-2xl font-normal tracking-tight text-muted md:text-3xl">Learn to</span>
+            <span className="pb-2 text-7xl leading-[0.85] font-extrabold tracking-tighter text-ink md:text-9xl">
               Flow
             </span>
           </h1>
@@ -109,9 +109,9 @@ export default function Landing() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.4, ease: 'easeOut', delay: 0.3 + i * 0.05 }}
-                    className="flex gap-4 text-sm leading-relaxed text-slate-300"
+                    className="flex gap-4 text-[15px] leading-relaxed text-ink"
                   >
-                    <span className="pt-0.5 text-[10px] font-bold tracking-widest text-sky-400 tabular-nums">
+                    <span className="pt-0.5 font-mono text-[11px] text-muted tabular-nums">
                       0{i + 1}
                     </span>
                     <span>{step}</span>
@@ -132,22 +132,22 @@ export default function Landing() {
                   >
                     <Link
                       to={`/board/${size}`}
-                      className="group relative flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 transition-all duration-300 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(56,189,248,0.15)] focus-visible:outline-2 focus-visible:outline-sky-400"
+                      className="group relative flex items-center gap-4 rounded-2xl border-2 border-ink bg-card px-5 py-3 shadow-[3px_3px_0_0_var(--color-ink)] transition-all duration-150 hover:-translate-x-px hover:-translate-y-px hover:shadow-[5px_5px_0_0_var(--color-ink)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                     >
-                      <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-sky-500/20 text-sky-400 transition-colors group-hover:bg-sky-500 group-hover:text-black">
+                      <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-paper text-ink transition-colors group-hover:bg-ink group-hover:text-paper">
                         <GridGlyph size={size} />
                       </div>
                       <div className="text-left">
-                        <p className="text-xs font-bold tracking-wide text-slate-200 transition-colors group-hover:text-white">
+                        <p className="font-mono text-xs font-medium text-ink">
                           {size} × {size}
                         </p>
-                        <p className="text-[10px] text-slate-500 transition-colors group-hover:text-slate-400">
+                        <p className="text-xs text-muted">
                           {size * size} cells
                         </p>
                       </div>
                       <svg
                         viewBox="0 0 24 24"
-                        className="h-3.5 w-3.5 -translate-x-2 text-sky-400 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100"
+                        className="h-3.5 w-3.5 -translate-x-2 text-ink opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
@@ -171,7 +171,7 @@ export default function Landing() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-2xl backdrop-blur-3xl"
+          className="rotate-[1.5deg] rounded-2xl border-2 border-ink bg-card p-3 shadow-[8px_8px_0_0_var(--color-ink)]"
         >
           <FlowBoard size={DEMO_SIZE} dots={DEMO_DOTS} paths={demoPaths} tint={reduceMotion ? DEMO_TINT : []} />
         </motion.div>
