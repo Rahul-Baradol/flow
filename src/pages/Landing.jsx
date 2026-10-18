@@ -106,9 +106,9 @@ export default function Landing() {
                 {STEPS.map((step, i) => (
                   <motion.li
                     key={step}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 + i * 0.1 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.4, ease: 'easeOut', delay: 0.3 + i * 0.05 }}
                     className="flex gap-4 text-sm leading-relaxed text-slate-300"
                   >
                     <span className="pt-0.5 text-[10px] font-bold tracking-widest text-sky-400 tabular-nums">
@@ -126,9 +126,9 @@ export default function Landing() {
                 {SIZES.map((size, i) => (
                   <motion.div
                     key={size}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.9 + i * 0.1 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.4, ease: 'easeOut', delay: 0.5 + i * 0.05 }}
                   >
                     <Link
                       to={`/board/${size}`}
