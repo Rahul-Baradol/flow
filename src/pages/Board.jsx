@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import Backdrop from '../components/Backdrop';
 import FlowBoard from '../components/FlowBoard';
 import { COLORS, COLOR_CODES } from '../colors';
-import { CONNECT, EXTEND, PRUNE, RETRACT, solve } from '../solver';
+import { SOLVERS, solverById } from '../solvers';
+import { CONNECT, EXTEND, PRUNE, RETRACT } from '../solvers/trace';
 import { createSearchReplay } from '../search';
+import { SIZES } from '../sizes';
 
-const SIZES = [4, 5, 6];
 const DRAW_DELAY = 70;
 
 // Playback speeds for the search replay: wait `delay` ms, then advance `batch` events.
@@ -20,6 +21,13 @@ const SPEEDS = [
 
 const HINT = { tone: 'idle', text: 'Pick a color, then tap two cells to place its dots.' };
 const SOLVED = { tone: 'success', text: 'Solved. Tap any cell to edit, or clear to start over.' };
+const solvedStatus = (solution) =>
+  solution.truncated
+    ? {
+        tone: 'success',
+        text: `Solved. The replay stops after ${solution.trace.length.toLocaleString()} steps, where the search was still going, so the last step jumps to the answer.`,
+      }
+    : SOLVED;
 const TONES = {
   idle: 'text-muted',
   info: 'text-ink',
@@ -107,6 +115,10 @@ function BoardSolver({ size }) {
   const [status, setStatus] = useState(HINT);
   const [stepMode, setStepMode] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [solverId, setSolverId] = useState(SOLVERS[0].id);
+  const [elapsed, setElapsed] = useState(0);
+  const workerRef = useRef(null);
+  const solver = solverById(solverId);
 
   const busy = phase === 'solving' || phase === 'drawing';
   const playing = phase === 'drawing';
@@ -122,7 +134,7 @@ function BoardSolver({ size }) {
     if (!solution || (phase !== 'drawing' && phase !== 'paused')) return;
     if (step >= total) {
       setPhase('solved');
-      setStatus(SOLVED);
+      setStatus(solvedStatus(solution));
       return;
     }
     if (phase !== 'drawing') return;
@@ -130,6 +142,17 @@ function BoardSolver({ size }) {
     const timer = setTimeout(() => setStep((s) => Math.min(total, s + batch)), delay);
     return () => clearTimeout(timer);
   }, [phase, step, solution, total, stepMode, speed]);
+
+  // Tick a clock while a slow search runs, and stop any search still running on unmount.
+  useEffect(() => {
+    if (phase !== 'solving') return;
+    const started = performance.now();
+    setElapsed(0);
+    const timer = setInterval(() => setElapsed(performance.now() - started), 100);
+    return () => clearInterval(timer);
+  }, [phase]);
+
+  useEffect(() => () => workerRef.current?.terminate(), []);
 
   useEffect(() => {
     if (!stepMode || !solution) return;
@@ -179,7 +202,7 @@ function BoardSolver({ size }) {
       tone: 'info',
       text:
         step === 0
-          ? `Found a solution in ${solution.ms} ms after ${total.toLocaleString()} search steps. Step through them, dead ends and backtracking included, or press play.`
+          ? `${solver.name} found a solution in ${solution.ms} ms after ${total.toLocaleString()} search steps. Step through them, dead ends and backtracking included, or press play.`
           : describeStep(search.last, solution, size),
     };
   }
@@ -237,13 +260,19 @@ function BoardSolver({ size }) {
     setSolution(null);
     setStep(0);
     setPhase('solving');
-    setStatus({ tone: 'info', text: 'Solving…' });
+    setStatus({ tone: 'info', text: `Solving with ${solver.name}…` });
 
-    // Let the "Solving…" state paint before the search blocks the main thread.
-    setTimeout(() => {
-      const started = performance.now();
-      const result = solve(size, pairs);
-      const ms = Math.max(1, Math.round(performance.now() - started));
+    // A brute-force search can run for a long time, so it runs in a worker that Cancel can stop.
+    const worker = new Worker(new URL('../solveWorker.js', import.meta.url), { type: 'module' });
+    workerRef.current = worker;
+    worker.onerror = (e) => {
+      stopWorker();
+      setPhase('edit');
+      setStatus({ tone: 'warning', text: `The solver crashed: ${e.message || 'unknown error'}.` });
+    };
+    worker.onmessage = ({ data: result }) => {
+      stopWorker();
+      const { ms } = result;
 
       if (!result.solved) {
         setPhase('edit');
@@ -254,10 +283,32 @@ function BoardSolver({ size }) {
         return;
       }
 
-      setSolution({ ...result, ms });
+      setSolution(result);
       setPhase(stepMode ? 'paused' : 'drawing');
-      setStatus({ tone: 'info', text: `Found a solution in ${ms} ms. Drawing the pipes…` });
-    }, 30);
+      setStatus({ tone: 'info', text: `${solver.name} found a solution in ${ms} ms. Drawing the pipes…` });
+    };
+    worker.postMessage({ solver: solverId, size, pairs });
+  }
+
+  function stopWorker() {
+    workerRef.current?.terminate();
+    workerRef.current = null;
+  }
+
+  function onCancel() {
+    stopWorker();
+    setPhase('edit');
+    setStatus({ tone: 'idle', text: `Stopped ${solver.name}. Try another solver, or move some dots.` });
+  }
+
+  function onPickSolver(id) {
+    setSolverId(id);
+    if (solution) {
+      setSolution(null);
+      setStep(0);
+      setPhase('edit');
+    }
+    setStatus({ tone: 'idle', text: `${solverById(id).name} is ready. Hit Solve to run it.` });
   }
 
   function onClear() {
@@ -386,15 +437,51 @@ function BoardSolver({ size }) {
           </div>
         </div>
 
-        <div className="order-5 flex items-center gap-4 lg:w-full">
-          <button
-            type="button"
-            onClick={onSolve}
-            disabled={busy}
-            className={`${tactile} bg-ink px-10 py-3.5 text-paper shadow-[3px_3px_0_0_var(--color-line)] not-disabled:hover:-translate-y-0.5 not-disabled:active:translate-y-0 lg:flex-1 lg:px-0`}
+        <div className="order-5 flex w-full max-w-sm flex-col items-center gap-3 lg:max-w-none lg:items-start">
+          <Label>Solver</Label>
+          <div
+            role="radiogroup"
+            aria-label="Solver"
+            className="flex w-full gap-0.5 rounded-full border-2 border-ink bg-card p-0.5"
           >
-            {phase === 'solving' ? 'Solving…' : 'Solve'}
-          </button>
+            {SOLVERS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                role="radio"
+                aria-checked={s.id === solverId}
+                disabled={busy}
+                onClick={() => onPickSolver(s.id)}
+                className={`flex-1 cursor-pointer rounded-full px-2 py-1.5 font-mono text-[11px] font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed ${
+                  s.id === solverId ? 'bg-ink text-paper' : 'text-muted not-disabled:hover:text-ink disabled:opacity-40'
+                }`}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+          <p className="min-h-10 text-center text-sm leading-relaxed text-muted lg:text-left">{solver.blurb}</p>
+        </div>
+
+        <div className="order-6 flex items-center gap-4 lg:w-full">
+          {phase === 'solving' ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              className={`${tactile} ${raised} px-10 py-3.5 tabular-nums lg:flex-1 lg:px-0`}
+            >
+              Cancel · {(elapsed / 1000).toFixed(1)}s
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onSolve}
+              disabled={busy}
+              className={`${tactile} bg-ink px-10 py-3.5 text-paper shadow-[3px_3px_0_0_var(--color-line)] not-disabled:hover:-translate-y-0.5 not-disabled:active:translate-y-0 lg:flex-1 lg:px-0`}
+            >
+              Solve
+            </button>
+          )}
           <button
             type="button"
             onClick={onClear}
@@ -405,7 +492,7 @@ function BoardSolver({ size }) {
           </button>
         </div>
 
-        <div className="order-6 flex flex-col items-center gap-2 lg:items-start lg:border-t lg:border-line lg:pt-6">
+        <div className="order-7 flex flex-col items-center gap-2 lg:items-start lg:border-t lg:border-line lg:pt-6">
           <button
             type="button"
             role="switch"
@@ -440,7 +527,7 @@ function BoardSolver({ size }) {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="order-3 w-[min(100%,58dvh)] overflow-hidden lg:order-7 lg:-mt-2 lg:w-full"
+              className="order-3 w-[min(100%,58dvh)] overflow-hidden lg:order-8 lg:-mt-2 lg:w-full"
             >
               <div className="flex flex-col gap-4 px-1 pt-1 pb-1.5">
                 <div className="flex items-center justify-between gap-3">
@@ -561,11 +648,13 @@ export default function Board() {
               key={s}
               to={`/board/${s}`}
               aria-current={s === size ? 'page' : undefined}
-              className={`rounded-full px-3 py-1.5 font-mono text-[11px] font-medium transition-colors ${
+              aria-label={`${s} × ${s}`}
+              className={`rounded-full px-2 py-1.5 font-mono text-[11px] font-medium transition-colors sm:px-3 ${
                 s === size ? 'bg-ink text-paper' : 'text-muted hover:text-ink'
               }`}
             >
-              {s} × {s}
+              {s}
+              <span className="hidden sm:inline"> × {s}</span>
             </Link>
           ))}
         </nav>

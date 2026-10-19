@@ -1,4 +1,4 @@
-import { CONNECT, DISCONNECT, EXTEND, PRUNE, decodeStep } from './solver';
+import { CONNECT, DISCONNECT, EXTEND, PRUNE, decodeStep } from './solvers/trace';
 
 // Snapshot spacing: any step is rebuilt from the nearest snapshot plus at most this many steps.
 const EVERY = 512;
@@ -6,9 +6,10 @@ const EVERY = 512;
 // Replays a solver trace. Each color's path is a stack that grows and shrinks as the search
 // moves, so at(step) returns the board after that many steps:
 //   { stacks, connected, counts: { tries, backtracks, pruned }, last }
-// where last is the decoded step that led there (undefined at step 0).
+// where last is the decoded step that led there (undefined at step 0). When the trace was
+// truncated, its final step shows the solution the search went on to find.
 export function createSearchReplay(solution) {
-  const { trace, ends } = solution;
+  const { trace, ends, order, truncated } = solution;
   const snapshots = [];
 
   const initial = () => ({
@@ -51,6 +52,10 @@ export function createSearchReplay(solution) {
       const base = Math.floor(step / EVERY);
       const result = copy(snapshots[base]);
       for (let i = base * EVERY; i < step; i++) apply(result, trace[i]);
+      if (truncated && step === trace.length) {
+        result.stacks = ends.map((_, code) => order.filter((cell) => cell.color === code).map((cell) => cell.id));
+        result.connected = ends.map(() => true);
+      }
       result.last = step > 0 ? decodeStep(trace[step - 1]) : undefined;
       return result;
     },

@@ -3,8 +3,8 @@ import { motion, useReducedMotion } from 'motion/react';
 import Backdrop from '../components/Backdrop';
 import SocialBar from '../components/SocialBar';
 import FlowBoard from '../components/FlowBoard';
+import { SIZES } from '../sizes';
 
-const SIZES = [4, 5, 6];
 
 const STEPS = [
   'Pick a board size.',
@@ -66,7 +66,7 @@ function GridGlyph({ size }) {
           key={i}
           cx={(12 / size) * ((i % size) + 0.5)}
           cy={(12 / size) * (Math.floor(i / size) + 0.5)}
-          r={size === 4 ? 0.9 : size === 5 ? 0.75 : 0.6}
+          r={3.6 / size}
           fill="currentColor"
         />
       ))}
