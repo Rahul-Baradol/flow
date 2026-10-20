@@ -8,6 +8,7 @@ import { SOLVERS, solverById } from '../solvers';
 import { CONNECT, EXTEND, PRUNE, RETRACT } from '../solvers/trace';
 import { createSearchReplay } from '../search';
 import { SIZES } from '../sizes';
+import { PUZZLES, parsePuzzle } from '../puzzles';
 
 const DRAW_DELAY = 70;
 
@@ -37,6 +38,10 @@ const TONES = {
 const MARKS = { success: '✓', warning: '!' };
 
 const emptyPairs = () => COLORS.map(() => []);
+
+// `npm run test <size>x<size>` sets this, so each board opens with its test puzzle placed.
+const TEST_PUZZLES = import.meta.env.VITE_TEST_PUZZLES === 'true';
+const LOADED = { tone: 'idle', text: 'Test puzzle loaded. Hit Solve to run it.' };
 const pad = (n, width) => String(n).padStart(width, '0');
 
 const tactile =
@@ -107,12 +112,12 @@ function cursorFor(step, solution) {
 
 function BoardSolver({ size }) {
   const reduceMotion = useReducedMotion();
-  const [pairs, setPairs] = useState(emptyPairs);
-  const [selected, setSelected] = useState(1);
+  const [pairs, setPairs] = useState(() => (TEST_PUZZLES ? parsePuzzle(PUZZLES[size]) : emptyPairs()));
+  const [selected, setSelected] = useState(() => COLOR_CODES.find((c) => pairs[c].length < 2) ?? 1);
   const [solution, setSolution] = useState(null);
   const [step, setStep] = useState(0);
   const [phase, setPhase] = useState('edit'); // edit | solving | drawing | paused | solved
-  const [status, setStatus] = useState(HINT);
+  const [status, setStatus] = useState(TEST_PUZZLES ? LOADED : HINT);
   const [stepMode, setStepMode] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [solverId, setSolverId] = useState(SOLVERS[0].id);

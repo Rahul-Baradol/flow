@@ -8,7 +8,7 @@ const EVERY = 512;
 //   { stacks, connected, counts: { tries, backtracks, pruned }, last }
 // where last is the decoded step that led there (undefined at step 0). When the trace was
 // truncated, its final step shows the solution the search went on to find.
-export function createSearchReplay(solution, every = EVERY) {
+export function createSearchReplay(solution) {
   const { trace, ends, order, truncated } = solution;
   const snapshots = [];
 
@@ -42,16 +42,16 @@ export function createSearchReplay(solution, every = EVERY) {
 
   const state = initial();
   for (let i = 0; i <= trace.length; i++) {
-    if (i % every === 0) snapshots.push(copy(state));
+    if (i % EVERY === 0) snapshots.push(copy(state));
     if (i < trace.length) apply(state, trace[i]);
   }
 
   return {
     length: trace.length,
     at(step) {
-      const base = Math.floor(step / every);
+      const base = Math.floor(step / EVERY);
       const result = copy(snapshots[base]);
-      for (let i = base * every; i < step; i++) apply(result, trace[i]);
+      for (let i = base * EVERY; i < step; i++) apply(result, trace[i]);
       if (truncated && step === trace.length) {
         result.stacks = ends.map((_, code) => order.filter((cell) => cell.color === code).map((cell) => cell.id));
         result.connected = ends.map(() => true);
