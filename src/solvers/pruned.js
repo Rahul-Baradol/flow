@@ -1,18 +1,5 @@
 import { CONNECT, DISCONNECT, EXTEND, PRUNE, RETRACT, createTrace, noDots } from './trace';
 
-// Port of "solver .cpp": depth-first search that routes one color at a time, starting with the
-// most constrained color (fewest free moves at its start), and prunes any board where connected
-// component labelling (with a disjoint set) shows some other color can no longer connect.
-//
-// size  -> board is size x size, cells are numbered row-major (id = row * size + col)
-// pairs -> pairs[colorCode] = [startId, endId] for each color code 1..9 that is placed
-//
-// Returns { solved, order, ends, trace, truncated }:
-//   order -> cells between the dots, in the order they were laid down, [{ id, color }]
-//   ends  -> ends[colorCode] = [startId, endId] in the direction the path was traced
-//   trace -> every step of the search, backtracking included, packed one per Uint16 (see trace.js)
-//   truncated -> true when the search outgrew MAX_STEPS and the trace stops early
-
 export function solvePruned(size, pairs) {
   const n = size;
   const m = size;

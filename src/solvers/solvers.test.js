@@ -101,10 +101,12 @@ describe('Pruned DFS', () => {
   });
 
   test('rebuilds any step from snapshots the same as a full replay', () => {
+    // A small snapshot spacing so the trace spans many snapshots however short the search is.
+    const every = 16;
     const result = solve(6, SIX);
-    expect(result.trace.length).toBeGreaterThan(512);
+    expect(result.trace.length).toBeGreaterThan(every * 4);
 
-    const replay = createSearchReplay(result);
+    const replay = createSearchReplay(result, every);
     const stacks = result.ends.map(() => []);
     result.trace.forEach((code, i) => {
       const { type, color, id } = decodeStep(code);

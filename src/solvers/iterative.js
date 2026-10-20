@@ -1,14 +1,5 @@
 import { CONNECT, DISCONNECT, EXTEND, noDots, RETRACT, createTrace, neighbors } from './trace';
 
-// Port of "solver - iterative dfs using stack.cpp": the same brute force as solveRecursive, but
-// the search runs on an explicit stack. Colors go in order of their first dot in reading order,
-// from that dot to the other. Each cell counts its "deflections" (branches still waiting on the
-// stack); at a dead end the path unwinds back to the nearest cell that has one left.
-//
-// Unlike the C++ original, connecting the last color only counts as solved when the board is
-// full; otherwise that branch is treated as a dead end and the search goes on.
-//
-// Takes and returns the same shapes as solvePruned.
 export function solveIterative(size, pairs) {
   const ends = [];
   pairs.forEach((ids, code) => {
