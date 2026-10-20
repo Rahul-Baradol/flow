@@ -115,42 +115,51 @@ export function solvePruned(size, pairs) {
       }
     }
 
-    colorsAccToFreeMoves.forEach((element) => {
-      let color = element[1];
-      if (color !== colorsAccToFreeMoves[ind][1]) {
-        let startPosX = colorX[color][0];
-        let startPosY = colorY[color][0];
+    // Only colours yet to be drawn can get stuck, earlier ones are already complete
+    for (let i = ind + 1; i < colorsAccToFreeMoves.length; i++) {
+      let color = colorsAccToFreeMoves[i][1];
 
-        let endPosX = colorX[color][1];
-        let endPosY = colorY[color][1];
+      let startPosX = colorX[color][0];
+      let startPosY = colorY[color][0];
 
-        let ok = 0;
-        for (let k1 = 0; k1 < 4; k1++) {
-          let newStartX = startPosX + dr[k1];
-          let newStartY = startPosY + dc[k1];
+      let endPosX = colorX[color][1];
+      let endPosY = colorY[color][1];
 
-          if (newStartX < 0 || newStartY < 0 || newStartX >= n || newStartY >= m) continue;
-
-          for (let k2 = 0; k2 < 4; k2++) {
-            let newEndX = endPosX + dr[k2];
-            let newEndY = endPosY + dc[k2];
-
-            if (newEndX < 0 || newEndY < 0 || newEndX >= n || newEndY >= m) continue;
-
-            if (findParent(labelGrid[newStartX][newStartY]) === findParent(labelGrid[newEndX][newEndY])) {
-              ok = 1;
-              break;
-            }
-          }
-
-          if (ok === 1) break;
-        }
-
-        if (ok === 0) {
-          stuckColorExists = true;
-        }
+      // Adjacent endpoints are already connected
+      if (Math.abs(startPosX - endPosX) + Math.abs(startPosY - endPosY) === 1) {
+        continue;
       }
-    });
+
+      let ok = 0;
+      for (let k1 = 0; k1 < 4; k1++) {
+        let newStartX = startPosX + dr[k1];
+        let newStartY = startPosY + dc[k1];
+
+        if (newStartX < 0 || newStartY < 0 || newStartX >= n || newStartY >= m) continue;
+        // Filled cells have no label, so they would all look like one component
+        if (vis[newStartX][newStartY] !== 0) continue;
+
+        for (let k2 = 0; k2 < 4; k2++) {
+          let newEndX = endPosX + dr[k2];
+          let newEndY = endPosY + dc[k2];
+
+          if (newEndX < 0 || newEndY < 0 || newEndX >= n || newEndY >= m) continue;
+          if (vis[newEndX][newEndY] !== 0) continue;
+
+          if (findParent(labelGrid[newStartX][newStartY]) === findParent(labelGrid[newEndX][newEndY])) {
+            ok = 1;
+            break;
+          }
+        }
+
+        if (ok === 1) break;
+      }
+
+      if (ok === 0) {
+        stuckColorExists = true;
+        break;
+      }
+    }
 
     return stuckColorExists;
   }
