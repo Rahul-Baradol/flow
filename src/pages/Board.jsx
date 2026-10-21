@@ -9,6 +9,7 @@ import { CONNECT, EXTEND, PRUNE, RETRACT } from '../solvers/trace';
 import { createSearchReplay } from '../search';
 import { SIZES } from '../sizes';
 import { PUZZLES, parsePuzzle } from '../puzzles';
+import { generatePuzzle } from '../generate';
 
 const DRAW_DELAY = 70;
 
@@ -42,6 +43,7 @@ const emptyPairs = () => COLORS.map(() => []);
 // `npm run test <size>x<size>` sets this, so each board opens with its test puzzle placed.
 const TEST_PUZZLES = import.meta.env.VITE_TEST_PUZZLES === 'true';
 const LOADED = { tone: 'idle', text: 'Test puzzle loaded. Hit Solve to run it.' };
+const GENERATED = { tone: 'idle', text: 'Fresh puzzle placed. Hit Solve, or tap dots to tweak it.' };
 const pad = (n, width) => String(n).padStart(width, '0');
 
 const tactile =
@@ -325,6 +327,14 @@ function BoardSolver({ size }) {
     setStatus(HINT);
   }
 
+  function onGenerate() {
+    setPairs(generatePuzzle(size));
+    setSolution(null);
+    setStep(0);
+    setPhase('edit');
+    setStatus(GENERATED);
+  }
+
   function goTo(target) {
     if (!solution) return;
     setStep(Math.max(0, Math.min(total, target)));
@@ -468,12 +478,12 @@ function BoardSolver({ size }) {
           <p className="min-h-10 text-center text-sm leading-relaxed text-muted lg:text-left">{solver.blurb}</p>
         </div>
 
-        <div className="order-6 flex items-center gap-4 lg:w-full">
+        <div className="order-6 flex items-center gap-3 lg:w-full lg:gap-4">
           {phase === 'solving' ? (
             <button
               type="button"
               onClick={onCancel}
-              className={`${tactile} ${raised} px-10 py-3.5 tabular-nums lg:flex-1 lg:px-0`}
+              className={`${tactile} ${raised} px-8 py-3.5 tabular-nums lg:flex-1 lg:px-0`}
             >
               Cancel · {(elapsed / 1000).toFixed(1)}s
             </button>
@@ -482,7 +492,7 @@ function BoardSolver({ size }) {
               type="button"
               onClick={onSolve}
               disabled={busy}
-              className={`${tactile} bg-ink px-10 py-3.5 text-paper shadow-[3px_3px_0_0_var(--color-line)] not-disabled:hover:-translate-y-0.5 not-disabled:active:translate-y-0 lg:flex-1 lg:px-0`}
+              className={`${tactile} bg-ink px-8 py-3.5 text-paper shadow-[3px_3px_0_0_var(--color-line)] not-disabled:hover:-translate-y-0.5 not-disabled:active:translate-y-0 lg:flex-1 lg:px-0`}
             >
               Solve
             </button>
@@ -491,9 +501,17 @@ function BoardSolver({ size }) {
             type="button"
             onClick={onClear}
             disabled={busy}
-            className={`${tactile} ${raised} px-8 py-3.5 lg:flex-1 lg:px-0`}
+            className={`${tactile} ${raised} px-6 py-3.5 lg:flex-1 lg:px-0`}
           >
             Clear
+          </button>
+          <button
+            type="button"
+            onClick={onGenerate}
+            disabled={busy}
+            className={`${tactile} ${raised} px-6 py-3.5 lg:flex-1 lg:px-0`}
+          >
+            Random
           </button>
         </div>
 
